@@ -1,58 +1,72 @@
 # Smart Crawler
 
-Django-based intelligent web crawler application. Crawls web pages, collects links, checks status codes, and analyzes page meta information.
+Django-based intelligent web crawler with Lighthouse-style performance auditing. Crawls web pages, analyzes performance, accessibility, SEO, and best practices.
 
 ## Features
 
-- Automatic web page crawling
-- Link collection (internal and external links)
-- HTTP status code checking
-- Page title and meta description extraction
-- Broken link detection
-- Dashboard visualization
-- Asynchronous crawling with Celery
-- Docker support
-- PostgreSQL database
+- **Web Crawling**: Automatic page crawling with link extraction
+- **Link Analysis**: Internal/external link detection with status checking
+- **Performance Auditing**: Lighthouse-style scoring for performance, accessibility, SEO, and best practices
+- **HTML Structure**: Visual tree representation of semantic HTML
+- **Schema Markup**: JSON-LD structured data extraction
+- **Network Visualization**: Interactive link relationship graph
+- **Real-time Dashboard**: Live crawl status updates
+- **Asynchronous Processing**: Background tasks with Celery
+- **Modern UI**: Tabbed interface with animated score circles
+- **Docker Support**: Full containerization with Docker Compose
 
 ## Installation
 
 ### Requirements
 
-- Docker
-- Docker Compose
+- **Docker Desktop** (includes Docker and Docker Compose)
+- **Git** (for cloning the repository)
 
-### Steps
+### Quick Start (Any Computer)
 
-1. Clone the project:
+Works on Mac, Windows, and Linux! Just follow these steps:
+
+#### 1. Clone the Repository
 ```bash
-git clone <repo-url>
+git clone https://github.com/mugulhan/smart-crawler.git
 cd smart-crawler
 ```
 
-2. Create environment file:
+#### 2. Start the Application
 ```bash
-cp .env.example .env
-```
+# Start all services (first time may take 2-3 minutes to build)
+docker-compose up -d
 
-3. Start Docker containers:
-```bash
-docker-compose up -d --build
-```
-
-4. Run database migrations:
-```bash
+# Run database migrations
 docker-compose exec web python manage.py migrate
 ```
 
-5. Create superuser (optional):
+#### 3. Access the Application
+Open your browser and go to: **http://localhost:8001**
+
+That's it! The application is ready to use.
+
+### Optional Steps
+
+#### Create Admin User
 ```bash
 docker-compose exec web python manage.py createsuperuser
 ```
 
-6. Collect static files:
+#### Collect Static Files
 ```bash
 docker-compose exec web python manage.py collectstatic --noinput
 ```
+
+### Using on Different Computers
+
+You can use this project on any computer (home PC, work laptop, etc.):
+
+1. **Install Docker Desktop** on the new computer
+2. **Clone the repository** (same commands as above)
+3. **Run `docker-compose up -d`** and you're ready!
+
+All dependencies (Python, PostgreSQL, Redis, etc.) are automatically installed inside Docker containers.
 
 ## Usage
 
