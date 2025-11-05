@@ -1,0 +1,1424 @@
+{% extends 'crawler/base.html' %}
+
+{% block title %}Crawl Details - Smart Crawler{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 20px;">
+    <a href="{% url 'dashboard' %}" class="btn btn-secondary">← Back to Dashboard</a>
+</div>
+
+<!-- Tabs Navigation -->
+<div class="tabs-container">
+    <div class="tabs-nav">
+        <button class="tab-btn active" data-tab="crawl-info">Crawl Information</button>
+        <button class="tab-btn" data-tab="page-info">Page Information</button>
+        <button class="tab-btn" data-tab="lighthouse">Lighthouse Performance</button>
+        <button class="tab-btn" data-tab="html-structure">HTML Structure</button>
+        <button class="tab-btn" data-tab="schema-markup">Schema Markup</button>
+        <button class="tab-btn" data-tab="network-viz">Link Network Visualization</button>
+        <button class="tab-btn" data-tab="links-list">Links List</button>
+    </div>
+
+    <!-- Tab Content: Crawl Information -->
+    <div class="tab-content active" id="crawl-info">
+        <div class="card">
+            <h2>Crawl Information</h2>
+    <table>
+        <tr>
+            <th style="width: 200px;">URL</th>
+            <td><a href="{{ crawl_job.url }}" target="_blank" class="link-url">{{ crawl_job.url }}</a></td>
+        </tr>
+        <tr>
+            <th>Status</th>
+            <td><span class="badge badge-{{ crawl_job.status }}">{{ crawl_job.get_status_display }}</span></td>
+        </tr>
+        <tr>
+            <th>Created</th>
+            <td>{{ crawl_job.created_at|date:"M d, Y H:i:s" }}</td>
+        </tr>
+        {% if crawl_job.started_at %}
+        <tr>
+            <th>Started</th>
+            <td>{{ crawl_job.started_at|date:"M d, Y H:i:s" }}</td>
+        </tr>
+        {% endif %}
+        {% if crawl_job.completed_at %}
+        <tr>
+            <th>Completed</th>
+            <td>{{ crawl_job.completed_at|date:"M d, Y H:i:s" }}</td>
+        </tr>
+        {% endif %}
+        {% if crawl_job.error_message %}
+        <tr>
+            <th>Error Message</th>
+            <td style="color: #e74c3c;">{{ crawl_job.error_message }}</td>
+        </tr>
+        {% endif %}
+    </table>
+        </div>
+    </div>
+
+    <!-- Tab Content: Page Information -->
+    <div class="tab-content" id="page-info">
+        {% if page_info %}
+        <div class="card">
+            <h2>Page Information</h2>
+    <table>
+        <tr>
+            <th style="width: 200px;">Title</th>
+            <td>{{ page_info.title|default:"None" }}</td>
+        </tr>
+        <tr>
+            <th>Meta Description</th>
+            <td>{{ page_info.meta_description|default:"None"|truncatewords:50 }}</td>
+        </tr>
+        <tr>
+            <th>Status Code</th>
+            <td>
+                <strong style="color: {% if page_info.status_code < 400 %}#00b894{% else %}#d63031{% endif %};">
+                    {{ page_info.status_code }}
+                </strong>
+            </td>
+        </tr>
+        <tr>
+            <th>Content Type</th>
+            <td>{{ page_info.content_type }}</td>
+        </tr>
+        <tr>
+            <th>Response Time</th>
+            <td>{{ page_info.response_time }} seconds</td>
+        </tr>
+        <tr>
+            <th>Page Size</th>
+            <td>{{ page_info.page_size|filesizeformat }}</td>
+        </tr>
+    </table>
+        </div>
+        {% else %}
+        <div class="card">
+            <p>No page information available.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Tab Content: Lighthouse Performance -->
+    <div class="tab-content" id="lighthouse">
+        {% if page_info and page_info.lighthouse_score %}
+        <div class="card">
+            <h2>Lighthouse Performance Report</h2>
+            <p style="color: #666; margin-bottom: 30px;">Automated auditing for performance, accessibility, best practices, and SEO.</p>
+
+            <!-- Score Circles -->
+            <div class="lighthouse-scores">
+                <div class="score-circle-container">
+                    <div class="score-circle" data-score="{{ page_info.lighthouse_score.overall }}">
+                        <svg width="140" height="140">
+                            <circle class="score-circle-bg" cx="70" cy="70" r="60"></circle>
+                            <circle class="score-circle-fill" cx="70" cy="70" r="60"></circle>
+                        </svg>
+                        <div class="score-value">{{ page_info.lighthouse_score.overall }}</div>
+                    </div>
+                    <div class="score-label">Overall</div>
+                </div>
+
+                <div class="score-circle-container">
+                    <div class="score-circle" data-score="{{ page_info.lighthouse_score.performance }}">
+                        <svg width="120" height="120">
+                            <circle class="score-circle-bg" cx="60" cy="60" r="50"></circle>
+                            <circle class="score-circle-fill" cx="60" cy="60" r="50"></circle>
+                        </svg>
+                        <div class="score-value">{{ page_info.lighthouse_score.performance }}</div>
+                    </div>
+                    <div class="score-label">Performance</div>
+                </div>
+
+                <div class="score-circle-container">
+                    <div class="score-circle" data-score="{{ page_info.lighthouse_score.accessibility }}">
+                        <svg width="120" height="120">
+                            <circle class="score-circle-bg" cx="60" cy="60" r="50"></circle>
+                            <circle class="score-circle-fill" cx="60" cy="60" r="50"></circle>
+                        </svg>
+                        <div class="score-value">{{ page_info.lighthouse_score.accessibility }}</div>
+                    </div>
+                    <div class="score-label">Accessibility</div>
+                </div>
+
+                <div class="score-circle-container">
+                    <div class="score-circle" data-score="{{ page_info.lighthouse_score.best_practices }}">
+                        <svg width="120" height="120">
+                            <circle class="score-circle-bg" cx="60" cy="60" r="50"></circle>
+                            <circle class="score-circle-fill" cx="60" cy="60" r="50"></circle>
+                        </svg>
+                        <div class="score-value">{{ page_info.lighthouse_score.best_practices }}</div>
+                    </div>
+                    <div class="score-label">Best Practices</div>
+                </div>
+
+                <div class="score-circle-container">
+                    <div class="score-circle" data-score="{{ page_info.lighthouse_score.seo }}">
+                        <svg width="120" height="120">
+                            <circle class="score-circle-bg" cx="60" cy="60" r="50"></circle>
+                            <circle class="score-circle-fill" cx="60" cy="60" r="50"></circle>
+                        </svg>
+                        <div class="score-value">{{ page_info.lighthouse_score.seo }}</div>
+                    </div>
+                    <div class="score-label">SEO</div>
+                </div>
+            </div>
+
+            <!-- Metrics -->
+            <div class="lighthouse-metrics">
+                <h3>Metrics</h3>
+                <div class="metrics-grid">
+                    <div class="metric-item">
+                        <div class="metric-label">Response Time</div>
+                        <div class="metric-value">{{ page_info.lighthouse_score.metrics.response_time }} ms</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">Page Size</div>
+                        <div class="metric-value">{{ page_info.lighthouse_score.metrics.page_size_kb }} KB</div>
+                    </div>
+                    <div class="metric-item">
+                        <div class="metric-label">DOM Elements</div>
+                        <div class="metric-value">{{ page_info.lighthouse_score.metrics.dom_size }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audits -->
+            {% if page_info.lighthouse_score.audits %}
+            <div class="lighthouse-audits">
+                <h3>Opportunities & Diagnostics</h3>
+                {% for audit in page_info.lighthouse_score.audits %}
+                <div class="audit-item audit-{{ audit.score }}">
+                    <div class="audit-icon">
+                        {% if audit.score == 'error' %}
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                            <line x1="12" y1="8" x2="12" y2="12" stroke-width="2" stroke-linecap="round"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        {% else %}
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        {% endif %}
+                    </div>
+                    <div class="audit-content">
+                        <div class="audit-title">{{ audit.title }}</div>
+                        <div class="audit-description">{{ audit.description }}</div>
+                        <div class="audit-category">{{ audit.category|title }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="empty-state" style="text-align: center; padding: 40px; color: #666;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="margin-bottom: 15px;">
+                    <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                    <polyline points="12 6 12 12 16 14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <p style="font-size: 16px; margin: 0;">No Lighthouse audit available.</p>
+                <p style="font-size: 14px; margin-top: 8px;">Run a new crawl to generate a Lighthouse performance report.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Tab Content: HTML Structure -->
+    <div class="tab-content" id="html-structure">
+        <div class="card">
+            <h2>HTML Structure Schema</h2>
+            {% if page_info and page_info.html_structure %}
+            <p style="color: #666; margin-bottom: 20px;">Visual representation of the page's semantic HTML structure. Click on nodes to expand/collapse.</p>
+
+            <div id="structure-tree" style="padding: 20px; background: #f8f9fa; border-radius: 8px; overflow-x: auto;">
+                <!-- Tree will be rendered here -->
+            </div>
+            {% else %}
+            <p>No HTML structure available for this crawl.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Tab Content: Schema Markup -->
+    <div class="tab-content" id="schema-markup">
+        <div class="card">
+            <h2>Schema Markup (JSON-LD)</h2>
+            {% if page_info and page_info.schema_markup %}
+            <p style="color: #666; margin-bottom: 20px;">
+                Found <strong>{{ page_info.schema_markup|length }}</strong> JSON-LD schema markup{% if page_info.schema_markup|length > 1 %}s{% endif %} on this page.
+                Schema.org structured data helps search engines understand your content.
+            </p>
+
+            <div id="schema-container">
+                <!-- Schema cards will be rendered here -->
+            </div>
+            {% else %}
+            <div class="empty-state" style="text-align: center; padding: 40px; color: #666;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="margin-bottom: 15px;">
+                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <p style="font-size: 16px; margin: 0;">No schema markup found on this page.</p>
+                <p style="font-size: 14px; margin-top: 8px;">Consider adding JSON-LD structured data to improve SEO.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Tab Content: Link Network Visualization -->
+    <div class="tab-content" id="network-viz">
+        <div class="card">
+            <h2>Link Network Visualization</h2>
+    <div style="margin-bottom: 20px;">
+        <p style="color: #666; margin-bottom: 10px;">Interactive network graph showing link relationships. <strong>Drag nodes</strong> to rearrange. <strong>Right-click + drag</strong> to pan. <strong>Scroll to zoom</strong> in/out.</p>
+
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
+            <div><span style="display: inline-block; width: 15px; height: 15px; background: #667eea; border-radius: 50%; margin-right: 5px;"></span> Root Domain</div>
+            <div><span style="display: inline-block; width: 15px; height: 15px; background: #f39c12; margin-right: 5px;"></span> Element Groups</div>
+            <div><span style="display: inline-block; width: 15px; height: 15px; background: #00b894; border-radius: 50%; margin-right: 5px;"></span> Internal Links</div>
+            <div><span style="display: inline-block; width: 15px; height: 15px; background: #a29bfe; border-radius: 50%; margin-right: 5px;"></span> External Links</div>
+            <div><span style="display: inline-block; width: 15px; height: 15px; background: #d63031; border-radius: 50%; margin-right: 5px;"></span> Broken Links</div>
+        </div>
+    </div>
+
+    <!-- Canvas with filter buttons overlay -->
+    <div style="position: relative;">
+        <canvas id="network-canvas" width="1200" height="600" style="border: 1px solid #e0e0e0; border-radius: 8px; width: 100%; max-width: 1200px; cursor: grab; display: block;"></canvas>
+
+        <!-- Filter buttons overlay on canvas -->
+        <div id="canvas-filters" style="position: absolute; top: 10px; left: 10px; display: flex; gap: 8px; flex-wrap: wrap; max-width: calc(100% - 20px); pointer-events: none;">
+            <!-- Buttons will be added dynamically here -->
+        </div>
+    </div>
+    <div id="graph-loading" style="display: none; text-align: center; padding: 40px;">
+        <div style="display: inline-block;">
+            <div class="loading-dot" style="animation-delay: 0s;"></div>
+            <div class="loading-dot" style="animation-delay: 0.16s;"></div>
+            <div class="loading-dot" style="animation-delay: 0.32s;"></div>
+        </div>
+        <p style="margin-top: 10px; color: #666;">Loading graph...</p>
+    </div>
+    <div id="node-info" style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; display: none;">
+        <h3 style="margin-bottom: 10px;">Node Information</h3>
+        <div id="node-info-content"></div>
+    </div>
+        </div>
+    </div>
+
+    <!-- Tab Content: Links List -->
+    <div class="tab-content" id="links-list">
+        <div class="card">
+            <h2>Links ({{ links.count }})</h2>
+
+    <div class="stats-grid" style="margin-bottom: 20px;">
+        <div class="stat-card">
+            <h3>Total Links</h3>
+            <div class="number">{{ crawl_job.total_links }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Internal Links</h3>
+            <div class="number">{{ crawl_job.internal_links }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>External Links</h3>
+            <div class="number">{{ crawl_job.external_links }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Broken Links</h3>
+            <div class="number">{{ links|length|add:"-"|add:links.count }}</div>
+        </div>
+    </div>
+
+    {% if links %}
+        <div class="link-list">
+            {% for link in links %}
+            <div class="link-item">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                    <span class="badge badge-{{ link.link_type }}">{{ link.get_link_type_display }}</span>
+                    {% if link.status_code %}
+                        <span class="badge {% if link.is_broken %}badge-failed{% else %}badge-completed{% endif %}">
+                            {{ link.status_code }}
+                        </span>
+                    {% endif %}
+                    {% if link.is_broken %}
+                        <span class="badge badge-failed">Broken</span>
+                    {% endif %}
+                </div>
+                <a href="{{ link.url }}" target="_blank" class="link-url">{{ link.url }}</a>
+                {% if link.anchor_text %}
+                    <div style="color: #666; font-size: 0.9em; margin-top: 5px;">
+                        Text: {{ link.anchor_text }}
+                    </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p>No links found.</p>
+        </div>
+    {% endif %}
+        </div>
+    </div>
+</div>
+
+<div style="margin-top: 20px;">
+    <a href="{% url 'delete_crawl' crawl_job.id %}" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this crawl?')">Delete Crawl</a>
+</div>
+
+<style>
+/* Tabs Styles */
+.tabs-container {
+    margin-bottom: 20px;
+}
+
+.tabs-nav {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid #e0e0e0;
+    margin-bottom: 0;
+    overflow-x: auto;
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.tab-btn:hover {
+    color: #667eea;
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.tab-btn.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+    font-weight: 600;
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease-in;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* HTML Structure Tree Styles */
+.tree-node {
+    margin: 10px 0;
+    padding: 0;
+}
+
+.tree-node-header {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 5px;
+}
+
+.tree-node-header:hover {
+    background: #f0f4ff;
+    border-color: #667eea;
+}
+
+.tree-toggle {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #667eea;
+    user-select: none;
+}
+
+.tree-tag {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    color: #667eea;
+    margin-right: 8px;
+}
+
+.tree-id {
+    font-family: 'Courier New', monospace;
+    color: #e74c3c;
+    margin-right: 8px;
+}
+
+.tree-class {
+    font-family: 'Courier New', monospace;
+    color: #f39c12;
+    margin-right: 8px;
+    font-size: 0.9em;
+}
+
+.tree-count {
+    margin-left: auto;
+    font-size: 0.85em;
+    color: #666;
+    background: #e8eaf6;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.tree-children {
+    margin-left: 30px;
+    border-left: 2px solid #e0e0e0;
+    padding-left: 15px;
+}
+
+.tree-children.collapsed {
+    display: none;
+}
+
+/* Schema Markup Styles */
+.schema-card {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.schema-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.schema-type {
+    font-size: 18px;
+    font-weight: 600;
+    color: #667eea;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.schema-type-icon {
+    width: 24px;
+    height: 24px;
+    background: #667eea;
+    color: white;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.schema-toggle {
+    background: #f0f4ff;
+    border: 1px solid #667eea;
+    color: #667eea;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.schema-toggle:hover {
+    background: #667eea;
+    color: white;
+}
+
+.schema-preview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.schema-field {
+    background: #f8f9fa;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border-left: 3px solid #667eea;
+}
+
+.schema-field-label {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.schema-field-value {
+    font-size: 14px;
+    color: #333;
+    word-break: break-word;
+}
+
+.schema-json {
+    display: none;
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 15px;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    max-height: 500px;
+}
+
+.schema-json.visible {
+    display: block;
+}
+
+.schema-json pre {
+    margin: 0;
+    color: #d4d4d4;
+}
+
+<style>
+.loading-dot {
+    width: 8px;
+    height: 8px;
+    background: #667eea;
+    border-radius: 50%;
+    display: inline-block;
+    margin: 0 3px;
+    animation: loading-bounce 1.4s infinite ease-in-out both;
+}
+
+@keyframes loading-bounce {
+    0%, 80%, 100% {
+        transform: scale(0);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Canvas filter buttons */
+.canvas-filter-btn {
+    pointer-events: auto;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 2px solid;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    user-select: none;
+}
+
+.canvas-filter-btn.active {
+    background: #667eea;
+    border-color: #667eea;
+    color: white;
+}
+
+.canvas-filter-btn.inactive {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: #cbd5e0;
+    color: #666;
+}
+
+.canvas-filter-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.canvas-filter-btn.active:hover {
+    background: #5568d3;
+    border-color: #5568d3;
+}
+
+.canvas-filter-btn.inactive:hover {
+    background: white;
+    border-color: #a0aec0;
+}
+</style>
+
+<script>
+// Lighthouse Score Circles Animation
+(function() {
+    const scoreCircles = document.querySelectorAll('.score-circle');
+
+    function getScoreColor(score) {
+        if (score >= 90) return '#0cce6b';  // Green
+        if (score >= 50) return '#ffa400';  // Orange
+        return '#ff4e42';  // Red
+    }
+
+    function animateScore(circle) {
+        const score = parseInt(circle.dataset.score);
+        const fillCircle = circle.querySelector('.score-circle-fill');
+        const radius = parseFloat(fillCircle.getAttribute('r'));
+        const circumference = 2 * Math.PI * radius;
+
+        // Set color based on score
+        const color = getScoreColor(score);
+        fillCircle.style.stroke = color;
+
+        // Calculate stroke offset for percentage
+        const offset = circumference - (score / 100) * circumference;
+
+        // Animate
+        setTimeout(() => {
+            fillCircle.style.strokeDashoffset = offset;
+        }, 100);
+    }
+
+    // Animate all score circles
+    scoreCircles.forEach(circle => animateScore(circle));
+})();
+
+// Network Graph Visualization
+(function() {
+    const canvas = document.getElementById('network-canvas');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    const crawlId = {{ crawl_job.id }};
+
+    // Set canvas size
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = 600;
+
+    let nodes = [];
+    let edges = [];
+    let allNodes = [];  // Store all nodes for filtering
+    let allEdges = [];  // Store all edges for filtering
+    let selectedNode = null;
+    let isDragging = false;
+    let isPanning = false;
+    let dragOffset = { x: 0, y: 0 };
+    let panStart = { x: 0, y: 0 };
+    let scale = 1;
+    let offsetX = 0;
+    let offsetY = 0;
+    let activeFilters = new Set(['all']);
+
+    // Physics simulation
+    const simulation = {
+        damping: 0.9,
+        gravity: 0.05
+    };
+
+    // Colors
+    const colors = {
+        root: '#667eea',
+        internal: '#00b894',
+        external: '#a29bfe',
+        broken: '#d63031',
+        element_group: '#f39c12',
+        edge: '#cbd5e0',
+        edgeActive: '#667eea'
+    };
+
+    // Load graph data
+    async function loadGraph() {
+        try {
+            const response = await fetch(`/api/graph-data/${crawlId}/`);
+            const data = await response.json();
+
+            // Find max layer for positioning
+            const maxLayer = Math.max(...data.nodes.map(n => n.layer || 0));
+
+            // Group nodes by layer
+            const nodesByLayer = {};
+            data.nodes.forEach(node => {
+                const layer = node.layer || 0;
+                if (!nodesByLayer[layer]) {
+                    nodesByLayer[layer] = [];
+                }
+                nodesByLayer[layer].push(node);
+            });
+
+            // Position nodes by layer (hierarchical layout)
+            const padding = 100;
+            const layerWidth = (canvas.width - 2 * padding) / Math.max(maxLayer, 1);
+
+            data.nodes.forEach((node) => {
+                const layer = node.layer || 0;
+                const nodesInLayer = nodesByLayer[layer];
+                const indexInLayer = nodesInLayer.indexOf(node);
+
+                // X position based on layer
+                if (layer === 0) {
+                    // Root node in center
+                    node.x = padding + 50;
+                } else {
+                    node.x = padding + (layer * layerWidth);
+                }
+
+                // Y position - distribute evenly within layer
+                const availableHeight = canvas.height - 2 * padding;
+                const ySpacing = availableHeight / (nodesInLayer.length + 1);
+                node.y = padding + ySpacing * (indexInLayer + 1);
+
+                node.vx = 0;
+                node.vy = 0;
+                node.radius = node.type === 'root' ? 30 : 20;
+            });
+
+            allNodes = data.nodes;
+            allEdges = data.edges;
+            nodes = [...allNodes];
+            edges = [...allEdges];
+
+            // Build filter checkboxes
+            buildFilterCheckboxes();
+
+            animate();
+        } catch (error) {
+            console.error('Error loading graph:', error);
+        }
+    }
+
+    // Build filter buttons on canvas from unique parent elements
+    function buildFilterCheckboxes() {
+        const uniqueElements = new Set();
+        allNodes.forEach(node => {
+            if (node.parent_element && node.type !== 'root') {
+                // Extract base element name (before > if hierarchy)
+                const elements = node.parent_element.split(' > ');
+                elements.forEach(el => {
+                    const baseEl = el.split(/[#.]/)[0];
+                    uniqueElements.add(baseEl);
+                });
+            }
+        });
+
+        const filterContainer = document.getElementById('canvas-filters');
+        filterContainer.innerHTML = ''; // Clear existing buttons
+
+        // Add "ALL" button first
+        const allBtn = document.createElement('button');
+        allBtn.className = 'canvas-filter-btn active';
+        allBtn.textContent = 'ALL';
+        allBtn.dataset.filter = 'all';
+        filterContainer.appendChild(allBtn);
+
+        // Add button for each unique element
+        Array.from(uniqueElements).sort().forEach(element => {
+            const btn = document.createElement('button');
+            btn.className = 'canvas-filter-btn active';
+            btn.textContent = `<${element}>`;
+            btn.dataset.filter = element;
+            filterContainer.appendChild(btn);
+        });
+
+        // Add click event listeners to all buttons
+        filterContainer.addEventListener('click', (e) => {
+            if (e.target.classList.contains('canvas-filter-btn')) {
+                handleFilterButtonClick(e.target);
+            }
+        });
+    }
+
+    // Handle filter button clicks
+    function handleFilterButtonClick(button) {
+        const value = button.dataset.filter;
+
+        if (value === 'all') {
+            // Toggle all filters
+            const isCurrentlyActive = button.classList.contains('active');
+
+            if (isCurrentlyActive) {
+                // Deactivate all
+                activeFilters.clear();
+                document.querySelectorAll('.canvas-filter-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.classList.add('inactive');
+                });
+            } else {
+                // Activate all
+                activeFilters.clear();
+                activeFilters.add('all');
+                document.querySelectorAll('.canvas-filter-btn').forEach(btn => {
+                    btn.classList.remove('inactive');
+                    btn.classList.add('active');
+                });
+                // Also add all individual filters
+                document.querySelectorAll('.canvas-filter-btn:not([data-filter="all"])').forEach(btn => {
+                    activeFilters.add(btn.dataset.filter);
+                });
+            }
+        } else {
+            // Toggle individual filter
+            const isActive = button.classList.contains('active');
+            const allBtn = document.querySelector('.canvas-filter-btn[data-filter="all"]');
+
+            if (isActive) {
+                // Deactivate this filter
+                button.classList.remove('active');
+                button.classList.add('inactive');
+                activeFilters.delete(value);
+                activeFilters.delete('all');
+                allBtn.classList.remove('active');
+                allBtn.classList.add('inactive');
+            } else {
+                // Activate this filter
+                button.classList.remove('inactive');
+                button.classList.add('active');
+                activeFilters.add(value);
+
+                // Check if all individual filters are now active
+                const individualBtns = Array.from(document.querySelectorAll('.canvas-filter-btn:not([data-filter="all"])'));
+                const allActive = individualBtns.every(btn => btn.classList.contains('active'));
+                if (allActive) {
+                    activeFilters.add('all');
+                    allBtn.classList.remove('inactive');
+                    allBtn.classList.add('active');
+                }
+            }
+        }
+
+        applyFilters();
+    }
+
+    // Apply filters to nodes and edges
+    function applyFilters() {
+        if (activeFilters.has('all') || activeFilters.size === 0) {
+            // Show all nodes and edges
+            nodes = [...allNodes];
+            edges = [...allEdges];
+        } else {
+            // Filter nodes based on parent element
+            const visibleNodeIds = new Set(['root']); // Always show root
+
+            nodes = allNodes.filter(node => {
+                if (node.type === 'root') return true;
+
+                if (node.parent_element) {
+                    // Check if any part of the hierarchy matches active filters
+                    const elements = node.parent_element.split(' > ');
+                    const hasMatch = elements.some(el => {
+                        const baseEl = el.split(/[#.]/)[0];
+                        return activeFilters.has(baseEl);
+                    });
+
+                    if (hasMatch) {
+                        visibleNodeIds.add(node.id);
+                        return true;
+                    }
+                }
+                return false;
+            });
+
+            // Filter edges to only show connections between visible nodes
+            edges = allEdges.filter(edge =>
+                visibleNodeIds.has(edge.from) && visibleNodeIds.has(edge.to)
+            );
+        }
+    }
+
+    // Draw functions
+    function drawEdge(edge) {
+        const fromNode = nodes.find(n => n.id === edge.from);
+        const toNode = nodes.find(n => n.id === edge.to);
+
+        if (!fromNode || !toNode) return;
+
+        ctx.beginPath();
+        ctx.moveTo(fromNode.x, fromNode.y);
+        ctx.lineTo(toNode.x, toNode.y);
+        ctx.strokeStyle = selectedNode === toNode ? colors.edgeActive : colors.edge;
+        ctx.lineWidth = selectedNode === toNode ? 2 : 1;
+        ctx.stroke();
+    }
+
+    function drawNode(node) {
+        let color = colors.external;
+        if (node.type === 'root') color = colors.root;
+        else if (node.type === 'internal') color = colors.internal;
+        else if (node.type === 'element_group') color = colors.element_group;
+        if (node.is_broken) color = colors.broken;
+
+        // Node shape - square for element groups, circle for others
+        if (node.type === 'element_group') {
+            // Draw square for element groups
+            const size = node.radius * 1.5;
+            ctx.fillStyle = color;
+            ctx.fillRect(node.x - size, node.y - size, size * 2, size * 2);
+
+            if (selectedNode === node) {
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(node.x - size, node.y - size, size * 2, size * 2);
+            }
+
+            // Label inside the square
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const label = node.label.length > 12 ? node.label.substring(0, 10) + '..' : node.label;
+            ctx.fillText(label, node.x, node.y);
+        } else {
+            // Node circle
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, node.radius, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            if (selectedNode === node) {
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+
+            // Parent element tag (inside the circle, at the top)
+            if (node.parent_element && node.type !== 'root') {
+                ctx.font = 'bold 8px sans-serif';
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                // Format parent element text
+                let parentText = node.parent_element;
+                // Extract tag name only (before # or .)
+                const tagOnly = parentText.split(/[#.]/)[0];
+
+                ctx.fillText(tagOnly.toUpperCase(), node.x, node.y - 5);
+            }
+
+            // Label (path/domain) - below the circle
+            ctx.fillStyle = '#333';
+            ctx.font = node.type === 'root' ? 'bold 14px sans-serif' : '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const label = node.label.length > 20 ? node.label.substring(0, 18) + '...' : node.label;
+            ctx.fillText(label, node.x, node.y + node.radius + 15);
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Save context and apply transformations
+        ctx.save();
+        ctx.translate(offsetX, offsetY);
+        ctx.scale(scale, scale);
+
+        // Draw edges first
+        edges.forEach(drawEdge);
+
+        // Draw nodes on top
+        nodes.forEach(drawNode);
+
+        ctx.restore();
+    }
+
+    function updatePhysics() {
+        nodes.forEach(node => {
+            if (node.id === 'root' || node === selectedNode) return;
+
+            // Apply damping
+            node.vx *= simulation.damping;
+            node.vy *= simulation.damping;
+
+            // Update position
+            node.x += node.vx;
+            node.y += node.vy;
+
+            // Boundary check
+            const padding = node.radius;
+            if (node.x < padding) { node.x = padding; node.vx = 0; }
+            if (node.x > canvas.width - padding) { node.x = canvas.width - padding; node.vx = 0; }
+            if (node.y < padding) { node.y = padding; node.vy = 0; }
+            if (node.y > canvas.height - padding) { node.y = canvas.height - padding; node.vy = 0; }
+        });
+    }
+
+    function animate() {
+        updatePhysics();
+        draw();
+        requestAnimationFrame(animate);
+    }
+
+    // Mouse interaction
+    function getMousePos(e) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+    }
+
+    function screenToWorld(screenX, screenY) {
+        return {
+            x: (screenX - offsetX) / scale,
+            y: (screenY - offsetY) / scale
+        };
+    }
+
+    function getNodeAtPosition(x, y) {
+        const worldPos = screenToWorld(x, y);
+        return nodes.find(node => {
+            const dx = node.x - worldPos.x;
+            const dy = node.y - worldPos.y;
+            return Math.sqrt(dx * dx + dy * dy) < node.radius;
+        });
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+        const pos = getMousePos(e);
+        const node = getNodeAtPosition(pos.x, pos.y);
+
+        // Right-click for panning
+        if (e.button === 2) {
+            e.preventDefault();
+            isPanning = true;
+            panStart = { x: pos.x, y: pos.y };
+            canvas.style.cursor = 'grabbing';
+            return;
+        }
+
+        // Left-click for node dragging
+        if (node && e.button === 0) {
+            selectedNode = node;
+            isDragging = true;
+            const worldPos = screenToWorld(pos.x, pos.y);
+            dragOffset = {
+                x: worldPos.x - node.x,
+                y: worldPos.y - node.y
+            };
+            canvas.style.cursor = 'grabbing';
+
+            // Show node info
+            const infoDiv = document.getElementById('node-info');
+            const infoContent = document.getElementById('node-info-content');
+            infoContent.innerHTML = `
+                <p><strong>Domain:</strong> ${node.domain}</p>
+                <p><strong>Type:</strong> ${node.type}</p>
+                ${node.path ? `<p><strong>Path:</strong> ${node.path}</p>` : ''}
+                ${node.parent_element ? `<p><strong>Parent Element:</strong> <code style="background: #e0e0e0; padding: 2px 6px; border-radius: 3px;">${node.parent_element}</code></p>` : ''}
+                ${node.status_code ? `<p><strong>Status:</strong> ${node.status_code}</p>` : ''}
+                <p><strong>URL:</strong> <a href="${node.url}" target="_blank" class="link-url">${node.url}</a></p>
+            `;
+            infoDiv.style.display = 'block';
+        }
+    });
+
+    // Prevent context menu on right-click
+    canvas.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        const pos = getMousePos(e);
+
+        if (isPanning) {
+            // Pan the canvas
+            const dx = pos.x - panStart.x;
+            const dy = pos.y - panStart.y;
+            offsetX += dx;
+            offsetY += dy;
+            panStart = { x: pos.x, y: pos.y };
+        } else if (isDragging && selectedNode) {
+            // Drag node
+            const worldPos = screenToWorld(pos.x, pos.y);
+            selectedNode.x = worldPos.x - dragOffset.x;
+            selectedNode.y = worldPos.y - dragOffset.y;
+            selectedNode.vx = 0;
+            selectedNode.vy = 0;
+        } else {
+            // Update cursor
+            const node = getNodeAtPosition(pos.x, pos.y);
+            canvas.style.cursor = node ? 'pointer' : 'grab';
+        }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+        isDragging = false;
+        isPanning = false;
+        canvas.style.cursor = 'grab';
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+        isDragging = false;
+        isPanning = false;
+        selectedNode = null;
+        canvas.style.cursor = 'grab';
+    });
+
+    // Zoom with mouse wheel
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+
+        const mousePos = getMousePos(e);
+        const worldBeforeZoom = screenToWorld(mousePos.x, mousePos.y);
+
+        // Zoom factor
+        const zoomFactor = e.deltaY < 0 ? 1.1 : 0.9;
+        const newScale = Math.min(Math.max(0.1, scale * zoomFactor), 5);
+
+        scale = newScale;
+
+        // Adjust offset to zoom towards mouse position
+        const worldAfterZoom = screenToWorld(mousePos.x, mousePos.y);
+        offsetX += (worldAfterZoom.x - worldBeforeZoom.x) * scale;
+        offsetY += (worldAfterZoom.y - worldBeforeZoom.y) * scale;
+    });
+
+    // Load and start
+    loadGraph();
+})();
+
+// HTML Structure Tree Rendering
+{% if page_info and page_info.html_structure %}
+const htmlStructure = {{ page_info.html_structure|safe }};
+
+function renderStructureTree(node, container) {
+    if (!node) return;
+
+    const nodeDiv = document.createElement('div');
+    nodeDiv.className = 'tree-node';
+
+    // Create header
+    const header = document.createElement('div');
+    header.className = 'tree-node-header';
+
+    // Toggle button (if has children)
+    const hasChildren = node.children && node.children.length > 0;
+    const toggle = document.createElement('span');
+    toggle.className = 'tree-toggle';
+    toggle.textContent = hasChildren ? '▼' : '•';
+    header.appendChild(toggle);
+
+    // Tag name
+    const tag = document.createElement('span');
+    tag.className = 'tree-tag';
+    tag.textContent = `<${node.tag}>`;
+    header.appendChild(tag);
+
+    // ID if exists
+    if (node.id) {
+        const id = document.createElement('span');
+        id.className = 'tree-id';
+        id.textContent = `#${node.id}`;
+        header.appendChild(id);
+    }
+
+    // Classes if exist
+    if (node.classes && node.classes.length > 0) {
+        const classSpan = document.createElement('span');
+        classSpan.className = 'tree-class';
+        classSpan.textContent = `.${node.classes.join('.')}`;
+        header.appendChild(classSpan);
+    }
+
+    // Child count
+    if (node.child_counts && Object.keys(node.child_counts).length > 0) {
+        const count = document.createElement('span');
+        count.className = 'tree-count';
+        const total = Object.values(node.child_counts).reduce((a, b) => a + b, 0);
+        count.textContent = `${total} elements`;
+        header.appendChild(count);
+    }
+
+    nodeDiv.appendChild(header);
+
+    // Children container
+    if (hasChildren) {
+        const childrenDiv = document.createElement('div');
+        childrenDiv.className = 'tree-children';
+
+        node.children.forEach(child => {
+            renderStructureTree(child, childrenDiv);
+        });
+
+        nodeDiv.appendChild(childrenDiv);
+
+        // Toggle functionality
+        header.addEventListener('click', function() {
+            childrenDiv.classList.toggle('collapsed');
+            toggle.textContent = childrenDiv.classList.contains('collapsed') ? '▶' : '▼';
+        });
+    }
+
+    container.appendChild(nodeDiv);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const treeContainer = document.getElementById('structure-tree');
+    if (treeContainer && htmlStructure) {
+        renderStructureTree(htmlStructure, treeContainer);
+    }
+});
+{% endif %}
+
+// Schema Markup Rendering
+{% if page_info and page_info.schema_markup %}
+const schemaMarkupData = {{ page_info.schema_markup|safe }};
+
+function renderSchemaMarkup() {
+    const container = document.getElementById('schema-container');
+    if (!container || !schemaMarkupData || schemaMarkupData.length === 0) return;
+
+    schemaMarkupData.forEach((schema, index) => {
+        const card = document.createElement('div');
+        card.className = 'schema-card';
+
+        // Determine schema type
+        const schemaType = schema['@type'] || 'Unknown';
+        const schemaContext = schema['@context'] || '';
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'schema-header';
+
+        const typeDiv = document.createElement('div');
+        typeDiv.className = 'schema-type';
+
+        const icon = document.createElement('div');
+        icon.className = 'schema-type-icon';
+        icon.textContent = schemaType.charAt(0);
+
+        typeDiv.appendChild(icon);
+        typeDiv.innerHTML += `<span>${schemaType}</span>`;
+
+        const toggle = document.createElement('button');
+        toggle.className = 'schema-toggle';
+        toggle.textContent = 'View JSON';
+        toggle.dataset.schemaId = index;
+
+        header.appendChild(typeDiv);
+        header.appendChild(toggle);
+        card.appendChild(header);
+
+        // Preview - extract key fields
+        const preview = document.createElement('div');
+        preview.className = 'schema-preview';
+
+        const importantFields = ['name', 'headline', 'description', 'url', 'datePublished',
+                                 'author', 'publisher', 'image', 'price', 'priceCurrency'];
+
+        importantFields.forEach(field => {
+            if (schema[field]) {
+                const fieldDiv = document.createElement('div');
+                fieldDiv.className = 'schema-field';
+
+                const label = document.createElement('div');
+                label.className = 'schema-field-label';
+                label.textContent = field;
+
+                const value = document.createElement('div');
+                value.className = 'schema-field-value';
+
+                let displayValue = schema[field];
+                if (typeof displayValue === 'object') {
+                    displayValue = displayValue.name || displayValue['@type'] || JSON.stringify(displayValue);
+                }
+                value.textContent = String(displayValue).substring(0, 100);
+                if (String(displayValue).length > 100) value.textContent += '...';
+
+                fieldDiv.appendChild(label);
+                fieldDiv.appendChild(value);
+                preview.appendChild(fieldDiv);
+            }
+        });
+
+        card.appendChild(preview);
+
+        // JSON view
+        const jsonDiv = document.createElement('div');
+        jsonDiv.className = 'schema-json';
+        jsonDiv.id = `schema-json-${index}`;
+
+        const pre = document.createElement('pre');
+        pre.textContent = JSON.stringify(schema, null, 2);
+        jsonDiv.appendChild(pre);
+
+        card.appendChild(jsonDiv);
+
+        // Toggle event
+        toggle.addEventListener('click', function() {
+            const jsonView = document.getElementById(`schema-json-${this.dataset.schemaId}`);
+            if (jsonView.classList.contains('visible')) {
+                jsonView.classList.remove('visible');
+                this.textContent = 'View JSON';
+            } else {
+                jsonView.classList.add('visible');
+                this.textContent = 'Hide JSON';
+            }
+        });
+
+        container.appendChild(card);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    renderSchemaMarkup();
+});
+{% endif %}
+
+// Tab Switching Logic
+document.addEventListener('DOMContentLoaded', function() {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const targetTab = this.dataset.tab;
+
+            // Remove active class from all buttons and contents
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            // Add active class to clicked button and corresponding content
+            this.classList.add('active');
+            document.getElementById(targetTab).classList.add('active');
+
+            // If switching to network visualization tab, redraw canvas
+            if (targetTab === 'network-viz') {
+                setTimeout(() => {
+                    // Trigger a redraw by calling animate if needed
+                    if (typeof animate === 'function') {
+                        animate();
+                    }
+                }, 100);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

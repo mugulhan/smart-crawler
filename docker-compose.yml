@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: smart_crawler
+      POSTGRES_USER: crawler
+      POSTGRES_PASSWORD: crawler123
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  web:
+    build: .
+    command: gunicorn --bind 0.0.0.0:8000 --workers 3 smart_crawler.wsgi:application
+    volumes:
+      - .:/app
+    ports:
+      - "8001:8000"
+    depends_on:
+      - db
+      - redis
+    environment:
+      DATABASE_URL: postgresql://crawler:crawler123@db:5432/smart_crawler
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_SETTINGS_MODULE: smart_crawler.settings
+
+  celery:
+    build: .
+    command: celery -A smart_crawler worker -l info
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    environment:
+      DATABASE_URL: postgresql://crawler:crawler123@db:5432/smart_crawler
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_SETTINGS_MODULE: smart_crawler.settings
+
+  celery-beat:
+    build: .
+    command: celery -A smart_crawler beat -l info
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    environment:
+      DATABASE_URL: postgresql://crawler:crawler123@db:5432/smart_crawler
+      REDIS_URL: redis://redis:6379/0
+      DJANGO_SETTINGS_MODULE: smart_crawler.settings
+
+volumes:
+  postgres_data:

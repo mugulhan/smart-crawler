@@ -1,0 +1,474 @@
+{% extends 'crawler/base.html' %}
+
+{% block title %}Dashboard - Smart Crawler{% endblock %}
+
+{% block content %}
+<!-- Notification Container -->
+<div id="notification-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999;"></div>
+
+<div class="stats-grid" id="stats-grid">
+    <div class="stat-card">
+        <h3>Total Crawls</h3>
+        <div class="number" id="stat-total">{{ stats.total_crawls }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Completed</h3>
+        <div class="number" id="stat-completed">{{ stats.completed_crawls }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Running</h3>
+        <div class="number" id="stat-running">{{ stats.running_crawls }}</div>
+    </div>
+    <div class="stat-card">
+        <h3>Failed</h3>
+        <div class="number" id="stat-failed">{{ stats.failed_crawls }}</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Start New Crawl</h2>
+    <form method="POST" action="{% url 'create_crawl' %}" id="crawl-form">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="url">URL</label>
+            <input type="url" id="url" name="url" placeholder="https://example.com" required>
+        </div>
+        <button type="submit" class="btn btn-primary" id="submit-btn">
+            <span class="btn-text">Start Crawl</span>
+            <span class="btn-spinner" style="display: none;">
+                <svg class="spinner" viewBox="0 0 50 50">
+                    <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+                </svg>
+                Starting...
+            </span>
+        </button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Recent Crawls</h2>
+    <table id="crawls-table">
+        <thead>
+            <tr>
+                <th>URL</th>
+                <th>Status</th>
+                <th>Total Links</th>
+                <th>Internal Links</th>
+                <th>External Links</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="crawls-tbody">
+            {% if crawl_jobs %}
+                {% for job in crawl_jobs %}
+                <tr data-job-id="{{ job.id }}" data-status="{{ job.status }}">
+                    <td>
+                        <a href="{% url 'crawl_detail' job.id %}" class="link-url">
+                            {{ job.url|truncatechars:60 }}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="badge badge-{{ job.status }}">
+                            {{ job.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ job.total_links }}</td>
+                    <td>{{ job.internal_links }}</td>
+                    <td>{{ job.external_links }}</td>
+                    <td>{{ job.created_at|date:"M d, Y H:i" }}</td>
+                    <td>
+                        <a href="{% url 'crawl_detail' job.id %}" class="btn btn-secondary" style="padding: 5px 15px; font-size: 0.9em;">Details</a>
+                        <a href="{% url 'delete_crawl' job.id %}" class="btn btn-danger" style="padding: 5px 15px; font-size: 0.9em;" onclick="return confirm('Are you sure you want to delete this?')">Delete</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr id="empty-row">
+                    <td colspan="7" style="text-align: center; padding: 60px 20px; color: #999;">
+                        No crawls yet. Use the form above to start a new crawl.
+                    </td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+.notification {
+    background: white;
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 300px;
+    animation: slideIn 0.3s ease-out;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.notification.success {
+    border-left: 4px solid #00b894;
+}
+
+.notification.error {
+    border-left: 4px solid #d63031;
+}
+
+.notification-icon {
+    font-size: 1.5em;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-title {
+    font-weight: 600;
+    margin-bottom: 3px;
+}
+
+.notification-message {
+    font-size: 0.9em;
+    color: #666;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+.notification.hiding {
+    animation: slideOut 0.3s ease-out forwards;
+}
+
+.pulse {
+    animation: pulse 0.5s ease-in-out;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+/* Loading Spinner Styles */
+.spinner {
+    animation: rotate 2s linear infinite;
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    vertical-align: middle;
+    margin-right: 5px;
+}
+
+.spinner .path {
+    stroke: white;
+    stroke-linecap: round;
+    animation: dash 1.5s ease-in-out infinite;
+}
+
+@keyframes rotate {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes dash {
+    0% {
+        stroke-dasharray: 1, 150;
+        stroke-dashoffset: 0;
+    }
+    50% {
+        stroke-dasharray: 90, 150;
+        stroke-dashoffset: -35;
+    }
+    100% {
+        stroke-dasharray: 90, 150;
+        stroke-dashoffset: -124;
+    }
+}
+
+.btn-primary:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Loading indicator in table */
+.loading-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.loading-dot {
+    width: 8px;
+    height: 8px;
+    background: #667eea;
+    border-radius: 50%;
+    animation: loading-bounce 1.4s infinite ease-in-out both;
+}
+
+.loading-dot:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.loading-dot:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes loading-bounce {
+    0%, 80%, 100% {
+        transform: scale(0);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.crawling-row {
+    background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.05), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+</style>
+
+<script>
+// Track job statuses
+let jobStatuses = {};
+
+// Initialize job statuses from current page
+document.querySelectorAll('[data-job-id]').forEach(row => {
+    jobStatuses[row.dataset.jobId] = row.dataset.status;
+});
+
+// Show notification
+function showNotification(title, message, type = 'success') {
+    const container = document.getElementById('notification-container');
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+
+    const icon = type === 'success' ? '✅' : '❌';
+
+    notification.innerHTML = `
+        <div class="notification-icon">${icon}</div>
+        <div class="notification-content">
+            <div class="notification-title">${title}</div>
+            <div class="notification-message">${message}</div>
+        </div>
+    `;
+
+    container.appendChild(notification);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        notification.classList.add('hiding');
+        setTimeout(() => notification.remove(), 300);
+    }, 5000);
+}
+
+// Update stats
+function updateStats(stats) {
+    document.getElementById('stat-total').textContent = stats.total_crawls;
+    document.getElementById('stat-completed').textContent = stats.completed_crawls;
+    document.getElementById('stat-running').textContent = stats.running_crawls;
+    document.getElementById('stat-failed').textContent = stats.failed_crawls;
+}
+
+// Update table
+function updateTable(jobs) {
+    const tbody = document.getElementById('crawls-tbody');
+    const emptyRow = document.getElementById('empty-row');
+
+    // Remove empty row if exists and we have jobs
+    if (emptyRow && jobs.length > 0) {
+        emptyRow.remove();
+    }
+
+    // Update or add rows
+    jobs.forEach(job => {
+        let row = document.querySelector(`[data-job-id="${job.id}"]`);
+        const wasRunning = jobStatuses[job.id] === 'running';
+        const isCompleted = job.status === 'completed';
+        const isFailed = job.status === 'failed';
+
+        // Check if status changed
+        if (wasRunning && isCompleted) {
+            showNotification(
+                'Crawl Completed!',
+                `${job.url.substring(0, 50)}... found ${job.total_links} links`,
+                'success'
+            );
+
+            // Pulse effect on stats
+            document.getElementById('stat-completed').classList.add('pulse');
+            setTimeout(() => {
+                document.getElementById('stat-completed').classList.remove('pulse');
+            }, 500);
+        } else if (wasRunning && isFailed) {
+            showNotification(
+                'Crawl Failed',
+                `${job.url.substring(0, 50)}...`,
+                'error'
+            );
+        }
+
+        // Update status tracker
+        jobStatuses[job.id] = job.status;
+
+        if (row) {
+            // Update existing row
+            row.dataset.status = job.status;
+
+            // Add shimmer effect for running jobs
+            if (job.status === 'running') {
+                row.classList.add('crawling-row');
+            } else {
+                row.classList.remove('crawling-row');
+            }
+
+            const statusBadge = job.status === 'running'
+                ? `<span class="badge badge-${job.status}">
+                      <span class="loading-indicator">
+                          <span class="loading-dot"></span>
+                          <span class="loading-dot"></span>
+                          <span class="loading-dot"></span>
+                      </span>
+                      ${job.status_display}
+                   </span>`
+                : `<span class="badge badge-${job.status}">${job.status_display}</span>`;
+
+            row.innerHTML = `
+                <td>
+                    <a href="/crawl/${job.id}/" class="link-url">
+                        ${job.url.length > 60 ? job.url.substring(0, 57) + '...' : job.url}
+                    </a>
+                </td>
+                <td>${statusBadge}</td>
+                <td>${job.total_links}</td>
+                <td>${job.internal_links}</td>
+                <td>${job.external_links}</td>
+                <td>${job.created_at}</td>
+                <td>
+                    <a href="/crawl/${job.id}/" class="btn btn-secondary" style="padding: 5px 15px; font-size: 0.9em;">Details</a>
+                    <a href="/crawl/${job.id}/delete/" class="btn btn-danger" style="padding: 5px 15px; font-size: 0.9em;" onclick="return confirm('Are you sure you want to delete this?')">Delete</a>
+                </td>
+            `;
+        } else {
+            // Add new row at the top
+            const newRow = document.createElement('tr');
+            newRow.dataset.jobId = job.id;
+            newRow.dataset.status = job.status;
+
+            // Add shimmer effect for running jobs
+            if (job.status === 'running') {
+                newRow.classList.add('crawling-row');
+            }
+
+            const statusBadge = job.status === 'running'
+                ? `<span class="badge badge-${job.status}">
+                      <span class="loading-indicator">
+                          <span class="loading-dot"></span>
+                          <span class="loading-dot"></span>
+                          <span class="loading-dot"></span>
+                      </span>
+                      ${job.status_display}
+                   </span>`
+                : `<span class="badge badge-${job.status}">${job.status_display}</span>`;
+
+            newRow.innerHTML = `
+                <td>
+                    <a href="/crawl/${job.id}/" class="link-url">
+                        ${job.url.length > 60 ? job.url.substring(0, 57) + '...' : job.url}
+                    </a>
+                </td>
+                <td>${statusBadge}</td>
+                <td>${job.total_links}</td>
+                <td>${job.internal_links}</td>
+                <td>${job.external_links}</td>
+                <td>${job.created_at}</td>
+                <td>
+                    <a href="/crawl/${job.id}/" class="btn btn-secondary" style="padding: 5px 15px; font-size: 0.9em;">Details</a>
+                    <a href="/crawl/${job.id}/delete/" class="btn btn-danger" style="padding: 5px 15px; font-size: 0.9em;" onclick="return confirm('Are you sure you want to delete this?')">Delete</a>
+                </td>
+            `;
+            tbody.insertBefore(newRow, tbody.firstChild);
+        }
+    });
+}
+
+// Fetch updates
+async function fetchUpdates() {
+    try {
+        const response = await fetch('/api/crawl-status/');
+        const data = await response.json();
+
+        updateStats(data.stats);
+        updateTable(data.jobs);
+    } catch (error) {
+        console.error('Error fetching updates:', error);
+    }
+}
+
+// Poll every 3 seconds
+setInterval(fetchUpdates, 3000);
+
+// Form submit handling with loading state
+document.getElementById('crawl-form').addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('submit-btn');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const btnSpinner = submitBtn.querySelector('.btn-spinner');
+    const urlInput = document.getElementById('url');
+
+    // Show loading state
+    submitBtn.disabled = true;
+    btnText.style.display = 'none';
+    btnSpinner.style.display = 'inline-flex';
+
+    // Re-enable after form submission and fetch updates
+    setTimeout(() => {
+        fetchUpdates();
+        urlInput.value = '';
+
+        // Reset button after 2 seconds
+        setTimeout(() => {
+            submitBtn.disabled = false;
+            btnText.style.display = 'inline';
+            btnSpinner.style.display = 'none';
+        }, 2000);
+    }, 1000);
+});
+</script>
+{% endblock %}
